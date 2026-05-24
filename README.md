@@ -83,3 +83,77 @@ IV. Common good stock market: Business activity of the platform and a means for 
 V. Reputation based for fair economic distribution: Every member of a project gets a yearly surplus distribution based on their contribution to each project (reputation score).
 
 Check the available bounties here: https://rinkeby.aragon.org/#/openliquid
+
+---
+
+## 🔗 Bridging OST (Open Standard Tokens), Aragon, and Decidim
+
+This guide addresses **Issue #3**: How to connect OST, the Aragon governance framework, and the Decidim participatory democracy platform into a cohesive LiquidFenix workflow.
+
+### Architecture Overview
+
+```
+┌─────────────┐     ┌────────────────┐     ┌─────────────┐
+│   Decidim    │────▶│   Aragon DAO   │────▶│  OST Tokens │
+│ (Proposals)  │     │ (Voting + Gov) │     │  (Incentive) │
+└─────────────┘     └────────────────┘     └─────────────┘
+        │                     │                     │
+        ▼                     ▼                     ▼
+  Open debate          On-chain voting        Contributor
+  & deliberation       (token-weighted)       rewards & stakes
+```
+
+### 1. Decidim → Aragon Bridge
+
+Decidim handles the **deliberative democracy** phase — proposals, comments, assemblies. To bridge to Aragon:
+
+- **Use the Decidim-Aragon Connector**: Deploy a middleware service that listens to Decidim webhooks (e.g., `proposal.created`, `proposal.passed`) and translates them into Aragon voting proposals via the Aragon Client API.
+- **Vote Weight Mapping**: Map Decidim participant reputation scores to Aragon token-weighted voting power.
+- **Recommended Tool**: [Vocdoni](https://vocdoni.io) — a censorship-proof voting protocol that integrates with both Decidim and EVM chains.
+
+### 2. Aragon → OST Bridge
+
+OST (Operational Staking Tokens) provide the incentive layer. To connect:
+
+- **Mint OST as Aragon Voting Tokens**: Deploy a mini-me token for each LiquidFenix project within Aragon. These tokens serve as both governance weight and reward currency.
+- **Bonding Curve Integration**: Use Aragon's bonding curve app to enable continuous OST issuance as contributors complete tasks.
+- **Staking & Slashing**: OST holders stake tokens to signal support for proposals. Misbehavior (e.g., failed audit) triggers slashing via Aragon agent contracts.
+
+### 3. Full Round-Trip Flow
+
+```
+1. User submits proposal on Decidim
+2. Community deliberates & improves proposal
+3. Proposal reaches threshold → triggers Aragon vote
+4. Token holders vote on Aragon
+5. Approved → OST rewards distributed to proposal author & contributors
+6. OST can be used for future proposal staking or exchanged
+7. Progress tracked back on Decidim for transparency
+```
+
+### 4. Smart Contract Architecture (Solidity Skeleton)
+
+```solidity
+// Simplified bridge interface
+interface ILiquidBridge {
+    function pushProposal(bytes32 proposalId, string memory metadata) external;
+    function syncVotes(bytes32 proposalId, address[] memory voters, uint256[] memory weights) external;
+    function distributeRewards(bytes32 proposalId, address[] memory recipients, uint256[] memory amounts) external;
+}
+```
+
+### 5. Getting Started
+
+1. Fork this repo and install dependencies
+2. Deploy the bridge contracts to your preferred EVM network
+3. Configure Decidim webhook endpoints pointing to your bridge service
+4. Set up Aragon DAO with token voting + bonding curve apps
+5. Mint initial OST and assign to early contributors
+
+> **Note**: LiquidFenix uses a modified ERC-20 with built-in reputation tracking. See the `contracts/` directory for the full implementation (coming soon — contributions welcome!).
+
+### References
+
+- [Aragon Developer Portal](https://devs.aragon.org)
+- [Decidim API Docs](https://docs.decidim.org/en/developers/)
+- [OpenZeppelin ERC-20 + Snapshot](https://docs.openzeppelin.com/contracts/4.x/api/token/erc20)
